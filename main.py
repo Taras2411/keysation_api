@@ -2,10 +2,10 @@ import uvicorn
 import mysql.connector 
 import json
 
-from typing import Optional
 
 
-from typing import Optional
+
+from typing import List, Optional
 from enum import Enum
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
@@ -13,7 +13,6 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
-
 
 mydb = mysql.connector.connect(
     host="localhost",
@@ -88,15 +87,32 @@ class User(BaseModel):
     user_id: int 
     FIO: str 
     ena: int
+    rights: List[str] = []
+    
 
 @app.post("/api/users/mod_user")
 def userModPost(fullUserInfo: User):
-    print(fullUserInfo)
-    temp = f"UPDATE key_station.Teachers SET FIO='{fullUserInfo.FIO}' WHERE id={fullUserInfo.user_id};"
-    print(temp)
-    mycursor.execute(temp)
-    mydb.commit()
-    #return fullUserInfo
+    post_id_list = []
+    for i in fullUserInfo.rights:
+        mycursor.execute(f"SELECT id FROM key_station.Keys WHERE Keys.Name = {i};")
+        rep = mycursor.fetchall()
+        if(len(rep) != 0):
+            #print(rep[0][0])
+            post_id_list.append(rep[0][0])
+    mycursor.execute(f"SELECT KeyId FROM key_station.TeachersToKeys  WHERE TeachersToKeys.TeacherId  = {fullUserInfo.user_id};")
+    rep2 = mycursor.fetchall()
+    last_id_list = []
+    for z in rep2:
+        last_id_list.append(z[0])
+    print(post_id_list)
+    print(last_id_list)
+    print(list(set(last_id_list) - set(post_id_list)))
+        
+    #temp = f"UPDATE key_station.Teachers SET FIO='{fullUserInfo.FIO}' WHERE id={fullUserInfo.user_id};"
+    #mycursor.execute(temp)
+    #mydb.commit()
+   
+   #return fullUserInfo.rights
 
 
 
